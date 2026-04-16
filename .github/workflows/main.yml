@@ -1,9 +1,43 @@
-steps:
-      - name: Use API Key
-        shell: bash
+name: Secure Workflow Example
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows you to run this manually for testing
+
+jobs:
+  secure-operations:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. Use a secret as an environment variable in a step
+      - name: Step 1 - Use API Key Env Var
         env:
-          # Map the GitHub secret to a local env var
           MY_API_KEY: ${{ secrets.API_KEY }}
         run: |
-          echo "The API key is being used securely..."
-          # Use $MY_API_KEY in your commands/scripts
+          echo "Connecting to service using the API Key..."
+          # The secret is masked in logs as ***
+          curl -H "X-API-KEY: $MY_API_KEY" https://api.example.com/v1/ping
+
+      # 2. Authenticate with a service (Cloud or API)
+      - name: Step 2 - Cloud/Service Authentication
+        run: |
+          echo "Authenticating with external service..."
+          # Constructing a secure request
+          curl -X POST "https://api.service.com/auth" \
+            -u "${{ secrets.SERVICE_USERNAME }}:${{ secrets.SERVICE_PASSWORD }}"
+
+      # 3. Securely pass a database password
+      - name: Step 3 - Database Operation
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+        run: |
+          echo "Running database migrations..."
+          # Example using a connection string or direct password flag
+          # psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/mydb" -c "\conninfo"
+          echo "Database task completed for host: $DB_HOST"
